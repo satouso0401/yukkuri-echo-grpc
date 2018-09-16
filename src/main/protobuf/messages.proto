@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package yukkuri.echo.grpc;
+
+message EchoRequest {
+    string message = 1;
+    int32 delaySec = 2;
+    int32 repeat = 3;
+    bool delimit = 4;
+}
+
+message EchoResponse {
+    string message = 1;
+}

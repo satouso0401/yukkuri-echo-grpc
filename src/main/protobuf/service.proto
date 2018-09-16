@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package yukkuri.echo.grpc;
+
+import "messages.proto";
+
+service EchoService {
+    rpc Unary(EchoRequest) returns (EchoResponse);
+    rpc ClientStreaming(stream EchoRequest) returns (EchoResponse);
+    rpc ServerStreaming(EchoRequest) returns (stream EchoResponse);
+    rpc BidirectionalStreaming(stream EchoRequest) returns (stream EchoResponse);
+}
