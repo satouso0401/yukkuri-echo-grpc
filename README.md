@@ -1,23 +1,24 @@
-Yukkuri gRPC echo
+Yukkuri echo gRPC
 ====
-
-
-
 
 # Run
 
 Server
 ```
-sbt "runMain GrpcServer"
+sbt "runMain yukkuri.echo.grpc.GrpcServer"
 ```
 
 Client Sample
 
 ```
-sbt "runMain GrpcClient"
+sbt "runMain yukkuri.echo.grpc.GrpcClient"
 ```
 
+# compile proto
 
+```
+sbt compile
+```
 
 
 

@@ -1,11 +1,12 @@
+package yukkuri.echo.grpc
+
 import io.grpc.stub.StreamObserver
 import io.grpc.{Server, ServerBuilder}
 import yukkuri.echo.grpc.messages.{EchoRequest, EchoResponse}
 import yukkuri.echo.grpc.service.EchoServiceGrpc
 
-import scala.concurrent.{ExecutionContext, Future}
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 object GrpcServer extends App {
   val server = new GrpcServer(ExecutionContext.global)
