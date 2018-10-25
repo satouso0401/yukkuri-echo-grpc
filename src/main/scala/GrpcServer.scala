@@ -1,5 +1,3 @@
-import java.util.Date
-
 import io.grpc.stub.StreamObserver
 import io.grpc.{Server, ServerBuilder}
 import yukkuri.echo.grpc.messages.{EchoRequest, EchoResponse}
@@ -23,8 +21,7 @@ class GrpcServer(executionContext: ExecutionContext) {
   private def start(): Unit = {
     server = ServerBuilder
       .forPort(50051)
-      .addService(
-        EchoServiceGrpc.bindService(new EchoServiceGrpcImpl, executionContext))
+      .addService(EchoServiceGrpc.bindService(new EchoServiceGrpcImpl, executionContext))
       .build
       .start
     sys.addShutdownHook {
@@ -45,35 +42,18 @@ class GrpcServer(executionContext: ExecutionContext) {
     }
   }
 
-//  import scala.concurrent._
-//  import java.util.concurrent.Executors
-//  val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1000))
-
   private class EchoServiceGrpcImpl extends EchoServiceGrpc.EchoService {
 
     override def unary(request: EchoRequest): Future[EchoResponse] = {
 
-      // FIXME delayの大きいリクエストを同時にたくさん受けるとつまる？
-
+      // delayの大きいリクエストを同時にたくさん受けるとつまる？
       Future {
         Thread.sleep(request.delaySec * 1000)
         EchoResponse(s"${request.message}")
       }
-
-//      val receiveTime = new Date()
-//      val responseTimeMs = receiveTime.getTime + (request.delaySec * 1000)
-//
-//      Future{
-//        val runTime = new Date()
-//        val sleepTimeMs = responseTimeMs - runTime.getTime
-//        if (sleepTimeMs <= 0) Thread.sleep(sleepTimeMs)
-//        EchoResponse(s"${request.message} # receive: $receiveTime, run: $runTime")
-//      }(ec)
-
     }
 
-    override def clientStreaming(responseObserver: StreamObserver[EchoResponse])
-      : StreamObserver[EchoRequest] = {
+    override def clientStreaming(responseObserver: StreamObserver[EchoResponse]): StreamObserver[EchoRequest] = {
       new StreamObserver[EchoRequest] {
         override def onError(t: Throwable) = {
           println("clientStreaming error")
@@ -81,7 +61,6 @@ class GrpcServer(executionContext: ExecutionContext) {
         }
 
         override def onCompleted() = {
-          // TODO この辺でスリープする？
           responseObserver.onNext(EchoResponse("clientStreaming completed"))
           responseObserver.onCompleted()
           println("clientStreaming completed")
@@ -94,11 +73,10 @@ class GrpcServer(executionContext: ExecutionContext) {
 
     }
 
-    override def serverStreaming(
-        request: EchoRequest,
-        responseObserver: StreamObserver[EchoResponse]): Unit = {
+    override def serverStreaming(request: EchoRequest, responseObserver: StreamObserver[EchoResponse]): Unit = {
 
       for (_ <- 1 to Math.max(request.repeat, 1)) {
+        Thread.sleep(request.delaySec * 1000)
         responseObserver.onNext(EchoResponse(request.message))
       }
 
@@ -106,29 +84,33 @@ class GrpcServer(executionContext: ExecutionContext) {
 
     }
 
-    override def bidirectionalStreaming(
-        responseObserver: StreamObserver[EchoResponse])
-      : StreamObserver[EchoRequest] = {
+    override def bidirectionalStreaming(responseObserver: StreamObserver[EchoResponse]): StreamObserver[EchoRequest] = {
       new StreamObserver[EchoRequest] {
         override def onError(t: Throwable) = {
           println("bidirectionalStreaming error")
+          t.printStackTrace()
           responseObserver.onError(t)
         }
 
         override def onCompleted() = {
-          // TODO この辺でスリープする？
-          responseObserver.onNext(
-            EchoResponse("bidirectionalStreaming completed"))
           responseObserver.onCompleted()
-          println("bidirectionalStreaming completed")
+          println("bidirectionalStreaming client completed")
         }
 
         override def onNext(req: EchoRequest) = {
 
           println(s"bidirectionalStreaming arrived ${req.message}")
 
-          for (_ <- 1 to Math.max(req.repeat, 1)) {
+          if (req.delimit) {
             responseObserver.onNext(EchoResponse(req.message))
+            responseObserver.onCompleted()
+          } else {
+            Future {
+              for (_ <- 1 to Math.max(req.repeat, 1)) {
+                Thread.sleep(req.delaySec * 1000)
+                responseObserver.onNext(EchoResponse(req.message))
+              }
+            }
           }
 
         }

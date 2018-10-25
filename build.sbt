@@ -1,4 +1,4 @@
-name := "yukkuri-echo"
+name := "yukkuri-grpc-echo"
 
 version := "0.1"
 

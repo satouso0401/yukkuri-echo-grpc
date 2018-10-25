@@ -13,9 +13,9 @@ object GrpcClient extends App {
 
   val channel =
     ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext.build
-  val blockingStub = EchoServiceGrpc.blockingStub(channel)
+  val blockingStub    = EchoServiceGrpc.blockingStub(channel)
   val nonBlockingStub = EchoServiceGrpc.stub(channel)
-  val client = new GrpcClient(channel, blockingStub, nonBlockingStub)
+  val client          = new GrpcClient(channel, blockingStub, nonBlockingStub)
 
   try {
     client.unary()
@@ -28,10 +28,10 @@ object GrpcClient extends App {
 }
 
 class GrpcClient private (
-                           private val channel: ManagedChannel,
-                           private val blockingStub: EchoServiceBlockingStub,
-                           private val nonBlockingStub: EchoServiceStub
-                         ) {
+    private val channel: ManagedChannel,
+    private val blockingStub: EchoServiceBlockingStub,
+    private val nonBlockingStub: EchoServiceStub
+) {
 
   def shutdown() = {
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
@@ -51,13 +51,12 @@ class GrpcClient private (
   def clientStreaming() = {
 
     val resObs = new StreamObserver[EchoResponse] {
-      override def onError(t: Throwable) = println("clientStreaming failed")
-      override def onCompleted() = println("clientStreaming complete")
+      override def onError(t: Throwable)       = println("clientStreaming failed")
+      override def onCompleted()               = println("clientStreaming complete")
       override def onNext(value: EchoResponse) = println(s"clientStreaming response: ${value.message}")
     }
 
     val reqObs: StreamObserver[EchoRequest] = nonBlockingStub.clientStreaming(resObs)
-
 
     reqObs.onNext(EchoRequest("clientStreaming request 1"))
     Thread.sleep(2000)
@@ -65,7 +64,6 @@ class GrpcClient private (
     Thread.sleep(2000)
     reqObs.onNext(EchoRequest("clientStreaming request 3"))
 
-    //resObs.onCompleted()
     reqObs.onCompleted()
 
   }
@@ -103,14 +101,21 @@ class GrpcClient private (
 
     val reqObs: StreamObserver[EchoRequest] = nonBlockingStub.bidirectionalStreaming(resObs)
 
-    reqObs.onNext(EchoRequest("bidirectionalStreaming request 1"))
-    Thread.sleep(2000)
-    reqObs.onNext(EchoRequest("bidirectionalStreaming request 2"))
-    Thread.sleep(2000)
-    reqObs.onNext(EchoRequest("bidirectionalStreaming request 3"))
+    reqObs.onNext(EchoRequest("bidirectionalStreaming unary request"))
+    reqObs.onNext(EchoRequest(message = "bidirectionalStreaming request delay 3 repeat 10", delaySec = 3, repeat = 5))
+    reqObs.onNext(EchoRequest(message = "bidirectionalStreaming request delay 2 repeat 10", delaySec = 2, repeat = 5))
 
-    reqObs.onCompleted()
+    Thread.sleep(20 * 1000)
 
+    // server complete
+    reqObs.onNext(EchoRequest(message = "bidirectionalStreaming server complete", delimit = true))
+    reqObs.onNext(EchoRequest("this message is ignore"))
+
+    // or client complete
+    // reqObs.onCompleted()
+
+    val res = promise.future
+    res.onComplete(println)
 
   }
 
