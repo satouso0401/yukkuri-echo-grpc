@@ -2,6 +2,7 @@ package yukkuri.echo.grpc
 
 import java.util.concurrent.TimeUnit
 
+import com.google.protobuf.ByteString
 import io.grpc.stub.StreamObserver
 import io.grpc.{ManagedChannel, ManagedChannelBuilder, StatusRuntimeException}
 import yukkuri.echo.grpc.messages.{EchoRequest, EchoResponse}
@@ -41,10 +42,10 @@ class GrpcClient private (
 
   def unary() = {
     val request =
-      EchoRequest("unary request")
+      EchoRequest("unary request", ByteString.copyFromUtf8("binary message"))
     try {
       val response = blockingStub.unary(request)
-      println("unary response message: " + response.message)
+      println(s"unary response message: ${response.message}, binaryMessage: ${response.binaryMessage.toStringUtf8}")
     } catch {
       case e: StatusRuntimeException => println("RPC status: " + e.getStatus)
     }

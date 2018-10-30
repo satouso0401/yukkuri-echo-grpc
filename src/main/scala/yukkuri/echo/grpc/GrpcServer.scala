@@ -50,7 +50,7 @@ class GrpcServer(executionContext: ExecutionContext) {
       // delayの大きいリクエストを同時にたくさん受けるとつまる？
       Future {
         Thread.sleep(request.delaySec * 1000)
-        EchoResponse(s"${request.message}")
+        EchoResponse(request.message, request.binaryMessage)
       }
     }
 
@@ -78,7 +78,7 @@ class GrpcServer(executionContext: ExecutionContext) {
 
       for (_ <- 1 to Math.max(request.repeat, 1)) {
         Thread.sleep(request.delaySec * 1000)
-        responseObserver.onNext(EchoResponse(request.message))
+        responseObserver.onNext(EchoResponse(request.message, request.binaryMessage))
       }
 
       responseObserver.onCompleted()
@@ -103,13 +103,13 @@ class GrpcServer(executionContext: ExecutionContext) {
           println(s"bidirectionalStreaming arrived ${req.message}")
 
           if (req.delimit) {
-            responseObserver.onNext(EchoResponse(req.message))
+            responseObserver.onNext(EchoResponse(req.message, req.binaryMessage))
             responseObserver.onCompleted()
           } else {
             Future {
               for (_ <- 1 to Math.max(req.repeat, 1)) {
                 Thread.sleep(req.delaySec * 1000)
-                responseObserver.onNext(EchoResponse(req.message))
+                responseObserver.onNext(EchoResponse(req.message, req.binaryMessage))
               }
             }
           }

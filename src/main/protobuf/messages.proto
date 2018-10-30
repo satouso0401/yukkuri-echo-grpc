@@ -4,11 +4,13 @@ package yukkuri.echo.grpc;
 
 message EchoRequest {
     string message = 1;
-    int32 delaySec = 2;
-    int32 repeat = 3;
-    bool delimit = 4;
+    bytes binaryMessage = 2;
+    int32 delaySec = 9;
+    int32 repeat = 10;
+    bool delimit = 11;
 }
 
 message EchoResponse {
     string message = 1;
+    bytes binaryMessage = 2;
 }
